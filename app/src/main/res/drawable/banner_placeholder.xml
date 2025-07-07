@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Background -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#E8F5E8" />
+            <size
+                android:width="400dp"
+                android:height="200dp" />
+        </shape>
+    </item>
+
+    <!-- Ảnh nằm giữa -->
+    <item>
+        <bitmap
+            android:src="@drawable/banner_sample"
+        android:gravity="center" />
+    </item>
+
+</layer-list>

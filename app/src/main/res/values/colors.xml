@@ -1,5 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <!-- Primary Colors -->
+    <color name="primary_green">#2E7D32</color>
+    <color name="primary_green_light">#4CAF50</color>
+    <color name="primary_green_lighter">#66BB6A</color>
+    <color name="primary_green_lightest">#81C784</color>
+
+    <!-- Secondary Colors -->
+    <color name="accent_orange">#FF6B35</color>
+    <color name="accent_orange_light">#F7931E</color>
+
+    <!-- Background Colors -->
+    <color name="background_light">#E8F5E8</color>
+    <color name="background_lighter">#F1F8E9</color>
+    <color name="background_white">#FFFFFF</color>
+
+    <!-- Text Colors -->
+    <color name="text_primary">#2E7D32</color>
+    <color name="text_secondary">#66BB6A</color>
+    <color name="text_hint">#81C784</color>
+    <color name="text_white">#FFFFFF</color>
+
+    <!-- Status Colors -->
+    <color name="status_delivered">#4CAF50</color>
+    <color name="status_processing">#FF9800</color>
+    <color name="status_preparing">#FF5722</color>
+    <color name="status_shipping">#2196F3</color>
+    <color name="status_cancelled">#F44336</color>
+    <color name="status_pending">#FF9800</color>
+
+
+    <!-- Bottom Navigation -->
+    <color name="bottom_nav_active">#2E7D32</color>
+    <color name="bottom_nav_inactive">#81C784</color>
+
+    <!-- Rating -->
+    <color name="rating_star">#FFD700</color>
+
+    <!-- Error -->
+    <color name="error_red">#E57373</color>
+
+
 </resources>

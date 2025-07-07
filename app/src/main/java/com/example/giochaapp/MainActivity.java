@@ -1,46 +1,84 @@
 package com.example.giochaapp;
 
-import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 
 import androidx.appcompat.app.AppCompatActivity;
-
-import com.example.giochaapp.auth.LoginActivity;
-import com.example.giochaapp.auth.RegisterActivity;
-import com.example.giochaapp.orders.OrderActivity;
-import com.example.giochaapp.orders.OrderDetailActivity;
-import com.example.giochaapp.orders.OrderHistoryActivity;
-import com.example.giochaapp.products.ProductDetailActivity;
-import com.example.giochaapp.products.ProductListActivity;
-
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.example.giochaapp.fragments.HomeFragment;
+import com.example.giochaapp.fragments.CartFragment;
+import com.example.giochaapp.fragments.ProfileFragment;
 
 public class MainActivity extends AppCompatActivity {
+
+    private BottomNavigationView bottomNavigationView;
+    private FragmentManager fragmentManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        findViewById(R.id.btnLogin).setOnClickListener(v ->
-                startActivity(new Intent(this, LoginActivity.class)));
+        initViews();
+        setupBottomNavigation();
 
-        findViewById(R.id.btnRegister).setOnClickListener(v ->
-                startActivity(new Intent(this, RegisterActivity.class)));
-
-        findViewById(R.id.btnProductList).setOnClickListener(v ->
-                startActivity(new Intent(this, ProductListActivity.class)));
-
-        findViewById(R.id.btnProductDetail).setOnClickListener(v ->
-                startActivity(new Intent(this, ProductDetailActivity.class)));
-
-        findViewById(R.id.btnOrder).setOnClickListener(v ->
-                startActivity(new Intent(this, OrderActivity.class)));
-
-        findViewById(R.id.btnOrderHistory).setOnClickListener(v ->
-                startActivity(new Intent(this, OrderHistoryActivity.class)));
-
-        findViewById(R.id.btnOrderDetail).setOnClickListener(v ->
-                startActivity(new Intent(this, OrderDetailActivity.class)));
-
+        // Load default fragment
+        if (savedInstanceState == null) {
+            bottomNavigationView.setSelectedItemId(R.id.nav_home);
+        }
     }
+
+    private void initViews() {
+        bottomNavigationView = findViewById(R.id.bottom_navigation);
+        fragmentManager = getSupportFragmentManager();
+    }
+
+    private void setupBottomNavigation() {
+        bottomNavigationView.setOnItemSelectedListener(menuItem -> {
+            Fragment selectedFragment = null;
+
+            if (menuItem.getItemId() == R.id.nav_home) {
+                selectedFragment = new HomeFragment();
+            } else if (menuItem.getItemId() == R.id.nav_cart) {
+                selectedFragment = new CartFragment();
+            } else if (menuItem.getItemId() == R.id.nav_profile) {
+                selectedFragment = new ProfileFragment();
+            }
+
+            if (selectedFragment != null) {
+                loadFragment(selectedFragment);
+            }
+
+            return true;
+        });
+    }
+
+    private void loadFragment(Fragment fragment) {
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
+        transaction.replace(R.id.fragment_container, fragment);
+        transaction.commit();
+
+        // Ẩn/hiện header + search tùy fragment
+        if (fragment instanceof HomeFragment) {
+            showHeaderSearch(true);
+        } else if (fragment instanceof CartFragment || fragment instanceof ProfileFragment) {
+            showHeaderSearch(false);
+        } else {
+            showHeaderSearch(true); // Mặc định hiện
+        }
+    }
+
+
+    public void showHeaderSearch(boolean show) {
+        View header = findViewById(R.id.header_layout);
+        View search = findViewById(R.id.search_card);
+        if (header != null && search != null) {
+            header.setVisibility(show ? View.VISIBLE : View.GONE);
+            search.setVisibility(show ? View.VISIBLE : View.GONE);
+        }
+    }
+
 }

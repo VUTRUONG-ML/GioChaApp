@@ -1,3 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">GioChaApp</string>
+    <string name="app_name">Giò Chả Việt Nam</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Trang chủ</string>
+    <string name="nav_cart">Giỏ hàng</string>
+    <string name="nav_profile">Tài khoản</string>
+
+    <!-- Login -->
+    <string name="login_title">Đăng Nhập</string>
+    <string name="login_email_hint">Email</string>
+    <string name="login_password_hint">Mật khẩu</string>
+    <string name="login_button">Đăng Nhập</string>
+    <string name="login_forgot_password">Quên mật khẩu?</string>
+    <string name="login_no_account">Chưa có tài khoản?</string>
+    <string name="login_register_link">Đăng ký</string>
+
+    <!-- Register -->
+    <string name="register_title">Tạo Tài Khoản</string>
+    <string name="register_subtitle">Tham gia gia đình Giò Chả Việt Nam</string>
+    <string name="register_fullname_hint">Họ và tên</string>
+    <string name="register_phone_hint">Số điện thoại</string>
+    <string name="register_confirm_password_hint">Xác nhận mật khẩu</string>
+    <string name="register_button">Đăng Ký</string>
+    <string name="register_have_account">Đã có tài khoản?</string>
+    <string name="register_login_link">Đăng nhập</string>
+
+    <!-- Home -->
+    <string name="home_search_hint">Tìm kiếm giò chả ngon...</string>
+    <string name="home_banner_title">Khuyến Mãi Đặc Biệt</string>
+    <string name="home_banner_subtitle">Giảm giá lên đến 20% cho đơn hàng đầu tiên</string>
+    <string name="home_banner_button">Đặt Ngay</string>
+    <string name="home_featured_title">Đặc Sản Của Chúng Tôi</string>
+    <string name="home_see_all">Xem tất cả</string>
+
+    <!-- Categories -->
+    <string name="category_all">Tất cả</string>
+    <string name="category_traditional">Truyền thống</string>
+    <string name="category_premium">Cao cấp</string>
+    <string name="category_combo">Combo</string>
+    <string name="category_promotion">Khuyến mãi</string>
+
+    <!-- Cart -->
+    <string name="cart_title">Giỏ Hàng Của Bạn</string>
+    <string name="cart_empty_title">Giỏ hàng của bạn đang trống</string>
+    <string name="cart_empty_subtitle">Hãy thêm một số giò chả ngon để bắt đầu!</string>
+    <string name="cart_total_label">Tổng tiền:</string>
+    <string name="cart_checkout_button">Tiến Hành Thanh Toán</string>
+
+    <!-- Product Detail -->
+    <string name="product_detail_title">Chi Tiết Sản Phẩm</string>
+    <string name="product_description_title">Mô Tả</string>
+    <string name="product_ingredients_title">Thành Phần</string>
+    <string name="product_related_title">Sản Phẩm Liên Quan</string>
+    <string name="product_quantity_label">Số lượng:</string>
+    <string name="product_total_label">Tổng cộng:</string>
+    <string name="product_add_to_cart">Thêm Vào Giỏ Hàng</string>
+
+    <!-- Order History -->
+    <string name="order_history_title">Lịch Sử Đơn Hàng</string>
+    <string name="order_history_empty_title">Chưa có đơn hàng nào</string>
+    <string name="order_history_empty_subtitle">Hãy bắt đầu đặt một số giò chả ngon!</string>
+    <string name="order_view_details">Xem chi tiết</string>
+
+    <!-- Order Status -->
+    <string name="status_delivered">Đã giao</string>
+    <string name="status_processing">Đang xử lý</string>
+    <string name="status_preparing">Đang chuẩn bị</string>
+    <string name="status_shipping">Đang giao</string>
+
+    <!-- Profile -->
+    <string name="profile_title">Tài Khoản</string>
+    <string name="profile_edit">Chỉnh Sửa Hồ Sơ</string>
+    <string name="profile_order_history">Lịch Sử Đơn Hàng</string>
+    <string name="profile_notifications">Thông Báo</string>
+    <string name="profile_settings">Cài Đặt</string>
+    <string name="profile_logout">Đăng Xuất</string>
+    <string name="profile_member_since">Thành viên từ %s</string>
+    <string name="profile_orders_count">Đơn hàng</string>
+    <string name="profile_rating">Đánh giá</string>
+
+    <!-- Checkout -->
+    <string name="checkout_title">Xác Nhận Đơn Hàng</string>
+    <string name="checkout_delivery_address">Địa Chỉ Giao Hàng</string>
+    <string name="checkout_change_address">Thay đổi</string>
+    <string name="checkout_payment_method">Phương Thức Thanh Toán</string>
+    <string name="checkout_payment_cod">Thanh toán khi nhận hàng (COD)</string>
+    <string name="checkout_payment_card">Thanh toán bằng thẻ</string>
+    <string name="checkout_payment_wallet">Ví điện tử (MoMo, ZaloPay)</string>
+    <string name="checkout_order_summary">Tóm Tắt Đơn Hàng</string>
+    <string name="checkout_subtotal">Tạm tính:</string>
+    <string name="checkout_shipping_fee">Phí giao hàng:</string>
+    <string name="checkout_shipping_free">Miễn phí</string>
+    <string name="checkout_total">Tổng cộng:</string>
+    <string name="checkout_cancel">Hủy</string>
+    <string name="checkout_confirm">Đặt Hàng</string>
+
+    <!-- Common -->
+    <string name="currency_symbol">₫</string>
+    <string name="quantity_label">Số lượng: %d</string>
+    <string name="rating_format">%.1f</string>
+    <string name="reviews_count">(%d đánh giá)</string>
+    <string name="discount_format">-%d%%</string>
+    <string name="items_count">%d sản phẩm</string>
+
+    <!-- Error Messages -->
+    <string name="error_empty_fields">Vui lòng điền đầy đủ thông tin</string>
+    <string name="error_password_mismatch">Mật khẩu không khớp</string>
+    <string name="error_invalid_email">Email không hợp lệ</string>
+    <string name="error_network">Lỗi kết nối mạng</string>
+    <string name="error_server">Lỗi máy chủ</string>
+
+    <!-- Success Messages -->
+    <string name="success_register">Tài khoản đã được tạo thành công!</string>
+    <string name="success_login">Đăng nhập thành công!</string>
+    <string name="success_add_to_cart">Đã thêm vào giỏ hàng!</string>
+    <string name="success_order_placed">Đặt hàng thành công!</string>
+
+    <!-- Confirmation Messages -->
+    <string name="confirm_logout_title">Đăng xuất</string>
+    <string name="confirm_logout_message">Bạn có chắc chắn muốn đăng xuất?</string>
+    <string name="confirm_remove_item_title">Xóa sản phẩm</string>
+    <string name="confirm_remove_item_message">Bạn có chắc chắn muốn xóa sản phẩm này khỏi giỏ hàng?</string>
+    <string name="button_cancel">Hủy</string>
+    <string name="button_confirm">Xác nhận</string>
+    <string name="button_ok">OK</string>
+
 </resources>
