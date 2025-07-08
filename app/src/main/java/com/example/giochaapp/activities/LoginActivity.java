@@ -12,7 +12,19 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.giochaapp.MainActivity;
 import com.example.giochaapp.R;
+import com.example.giochaapp.config.ApiConfig;
+import com.example.giochaapp.utils.AuthManager;
 import com.example.giochaapp.utils.SharedPrefsManager;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -91,15 +103,7 @@ public class LoginActivity extends AppCompatActivity {
         loginButton.setEnabled(false);
         loginButton.setText("Đang đăng nhập...");
 
-        // Simulate network delay
-        new android.os.Handler().postDelayed(() -> {
-            // For demo purposes, accept any valid email/password
-            prefsManager.setLoggedIn(true);
-            prefsManager.setUserEmail(email);
-
-            Toast.makeText(this, R.string.success_login, Toast.LENGTH_SHORT).show();
-            navigateToMain();
-        }, 1500);
+        new LoginTask(email, password).execute();
     }
 
     private void handleForgotPassword() {
@@ -117,4 +121,113 @@ public class LoginActivity extends AppCompatActivity {
         startActivity(intent);
         finish();
     }
+
+    private class LoginTask extends android.os.AsyncTask<Void, Void, String> {
+        private String email, password;
+
+        public LoginTask(String email, String password) {
+            this.email = email;
+            this.password = password;
+        }
+
+        @Override
+        protected String doInBackground(Void... voids) {
+            HttpURLConnection conn = null;
+            try {
+                URL url = new URL(ApiConfig.BASE_URL + "/api/auth/login");
+                conn = (HttpURLConnection) url.openConnection();
+
+                conn.setReadTimeout(10000);
+                conn.setConnectTimeout(15000);
+                conn.setRequestMethod("POST");
+                conn.setDoOutput(true);
+                conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+
+                // Gửi JSON
+                JSONObject jsonParam = new JSONObject();
+                jsonParam.put("email", email);
+                jsonParam.put("passWord", password);
+
+                OutputStream os = conn.getOutputStream();
+                os.write(jsonParam.toString().getBytes("UTF-8"));
+                os.flush();
+                os.close();
+
+                int responseCode = conn.getResponseCode();
+                InputStream inputStream;
+
+                if (responseCode >= 200 && responseCode < 300) {
+                    inputStream = conn.getInputStream(); // Thành công
+                } else {
+                    inputStream = conn.getErrorStream(); // Lỗi (400, 404, 500...)
+                }
+
+                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+                StringBuilder response = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    response.append(line);
+                }
+                reader.close();
+                JSONObject wrappedResult = new JSONObject();
+                wrappedResult.put("status", responseCode);
+                wrappedResult.put("body", new JSONObject(response.toString()));
+                return wrappedResult.toString();
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            } finally {
+                if (conn != null) conn.disconnect();
+            }
+        }
+
+
+        @Override
+        protected void onPostExecute(String result) {
+            loginButton.setEnabled(true);
+            loginButton.setText("Đăng nhập");
+
+            if (result != null) {
+                try {
+                    JSONObject json = new JSONObject(result);
+                    int statusCode = json.getInt("status");
+                    JSONObject body = json.getJSONObject("body");
+                    String message = body.optString("message", "Đăng nhập thành công!");
+
+                    Toast.makeText(LoginActivity.this, message, Toast.LENGTH_LONG).show();
+
+                    if (statusCode >= 200 && statusCode < 300) {
+                        String token = body.optString("token", "");
+                        if (!token.isEmpty()) {
+                            AuthManager.getInstance(LoginActivity.this).login(email, token);
+
+                            // Gọi API /me để lấy thông tin người dùng và lưu lại
+                            AuthManager.getInstance(LoginActivity.this).fetchCurrentUser(new AuthManager.Callback() {
+                                @Override
+                                public void onSuccess(JSONObject userData) {
+                                    // Điều hướng sang màn chính
+                                    runOnUiThread(() -> navigateToMain());
+                                }
+
+                                @Override
+                                public void onError(String errorMessage) {
+                                    runOnUiThread(() -> {
+                                        Toast.makeText(LoginActivity.this, "Lỗi khi lấy thông tin user: " + errorMessage, Toast.LENGTH_SHORT).show();
+                                    });
+                                }
+                            });
+                        } else {
+                            Toast.makeText(LoginActivity.this, "Không nhận được token!", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                } catch (JSONException e) {
+                    Toast.makeText(LoginActivity.this, "Lỗi phản hồi từ server!", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Toast.makeText(LoginActivity.this, "Đăng nhập thất bại! Kiểm tra thông tin hoặc API.", Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
 }

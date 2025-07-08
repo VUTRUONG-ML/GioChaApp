@@ -40,5 +40,8 @@
     <!-- Error -->
     <color name="error_red">#E57373</color>
 
+    <!--loading-->
+    <color name="loading_white">#FFFFFF</color>
+
 
 </resources>

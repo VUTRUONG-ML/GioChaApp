@@ -2,15 +2,21 @@ package com.example.giochaapp;
 
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
+
+import com.example.giochaapp.utils.AuthManager;
+import com.example.giochaapp.utils.SharedPrefsManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.example.giochaapp.fragments.HomeFragment;
 import com.example.giochaapp.fragments.CartFragment;
 import com.example.giochaapp.fragments.ProfileFragment;
+
+import org.json.JSONObject;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -24,6 +30,17 @@ public class MainActivity extends AppCompatActivity {
 
         initViews();
         setupBottomNavigation();
+
+        // Load default fragment
+        if (savedInstanceState == null) {
+            bottomNavigationView.setSelectedItemId(R.id.nav_home);
+        }
+        SharedPrefsManager prefs = new SharedPrefsManager(MainActivity.this);
+        JSONObject user = prefs.getUserObject();
+        if (user != null) {
+            String name = user.optString("userName", "Unknown");
+            Toast.makeText(this, "Xin chào " + name, Toast.LENGTH_LONG).show();
+        }
 
         // Load default fragment
         if (savedInstanceState == null) {

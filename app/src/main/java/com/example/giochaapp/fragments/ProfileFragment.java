@@ -15,6 +15,7 @@ import com.bumptech.glide.Glide;
 import com.example.giochaapp.activities.LoginActivity;
 import com.example.giochaapp.R;
 import com.example.giochaapp.models.User;
+import com.example.giochaapp.utils.AuthManager;
 import com.example.giochaapp.utils.SharedPrefsManager;
 
 public class ProfileFragment extends Fragment {
@@ -134,13 +135,12 @@ public class ProfileFragment extends Fragment {
                 .setTitle("Đăng xuất")
                 .setMessage("Bạn có chắc chắn muốn đăng xuất?")
                 .setPositiveButton("Đăng xuất", (dialog, which) -> {
-                    prefsManager.setLoggedIn(false);
-                    prefsManager.clearUserData();
+                    AuthManager.getInstance(requireContext()).logout();
 
                     Intent intent = new Intent(getContext(), LoginActivity.class);
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     startActivity(intent);
-                    getActivity().finish();
+                    requireActivity().finish();
                 })
                 .setNegativeButton("Hủy", null)
                 .show();
