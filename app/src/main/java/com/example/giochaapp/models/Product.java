@@ -1,5 +1,7 @@
 package com.example.giochaapp.models;
 
+import java.util.List;
+
 public class Product {
     private String id;
     private String name;
@@ -7,7 +9,11 @@ public class Product {
     private int price;
     private String imageUrl;
     private float rating;
+    private String categoryId;
+
     private int discount; // percentage
+    private List<String> ingredients;
+
 
     public Product(String id, String name, String description, int price,
                    String imageUrl, float rating) {
@@ -19,6 +25,11 @@ public class Product {
         this.rating = rating;
         this.discount = 0;
     }
+
+    public Product() {
+        // Constructor mặc định để có thể tạo rồi gán lần lượt
+    }
+
 
     public Product(String id, String name, String description, int price,
                    String imageUrl, float rating, int discount) {
@@ -48,6 +59,12 @@ public class Product {
     public int getDiscount() { return discount; }
     public void setDiscount(int discount) { this.discount = discount; }
 
+    public List<String> getIngredients() {
+        return ingredients;
+    }
+    public void setIngredients(List<String> ingredients) {
+        this.ingredients = ingredients;
+    }
     public boolean hasDiscount() { return discount > 0; }
 
     public int getDiscountedPrice() {
@@ -56,6 +73,18 @@ public class Product {
         }
         return price;
     }
+    public String getCategoryId() {
+        return categoryId;
+    }
+    public void setCategoryId(String categoryId) {
+        this.categoryId = categoryId;
+    }
+    public String getFormattedIngredients() {
+        if (ingredients == null || ingredients.isEmpty()) return "Không rõ";
+        return android.text.TextUtils.join(", ", ingredients);
+    }
+
+
 
     public String getFormattedPrice() {
         return String.format("%,d ₫", price);

@@ -1,19 +1,40 @@
 package com.example.giochaapp.fragments;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
+
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.giochaapp.MainActivity;
 import com.example.giochaapp.R;
 import com.example.giochaapp.activities.ProductDetailActivity;
 import com.example.giochaapp.adapters.ProductAdapter;
+import com.example.giochaapp.config.ApiConfig;
 import com.example.giochaapp.models.Product;
+import com.example.giochaapp.utils.AuthManager;
+import com.example.giochaapp.utils.SharedPrefsManager;
+import com.example.giochaapp.utils.ViewUtils;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 
 public class HomeFragment extends Fragment {
 
@@ -28,6 +49,8 @@ public class HomeFragment extends Fragment {
 
         initViews(view);
         setupRecyclerView();
+        productsRecyclerView.setHasFixedSize(false);
+        productsRecyclerView.setNestedScrollingEnabled(false);
         loadProducts();
 
         return view;
@@ -62,20 +85,89 @@ public class HomeFragment extends Fragment {
     }
 
     private void loadProducts() {
-        // Sample data - thay thế bằng DB sau
-        productList.add(new Product("1", "Giò Chả Truyền Thống",
-                "Giò chả làm theo công thức truyền thống", 25000,
-                "https://images.pexels.com/photos/4518843/pexels-photo-4518843.jpeg", 4.8f));
-        productList.add(new Product("2", "Combo Giò Chả",
-                "Giò chả kèm rau sống và bánh tráng", 35000,
-                "https://images.pexels.com/photos/4253312/pexels-photo-4253312.jpeg", 4.9f, 10));
-        productList.add(new Product("3", "Giò Chả Cao Cấp",
-                "Giò chả chất lượng cao với thảo mộc đặc biệt", 45000,
-                "https://images.pexels.com/photos/5419336/pexels-photo-5419336.jpeg", 4.7f));
-        productList.add(new Product("4", "Gói Gia Đình",
-                "5 miếng giò chả các loại khác nhau", 120000,
-                "https://images.pexels.com/photos/6210959/pexels-photo-6210959.jpeg", 4.6f, 15));
-
-        productAdapter.notifyDataSetChanged();
+        new GetFoodsTask().execute();
     }
+
+    private class GetFoodsTask extends AsyncTask<Void, Void, JSONArray> {
+        @Override
+        protected JSONArray doInBackground(Void... voids) {
+            HttpURLConnection conn = null;
+            try {
+                URL url = new URL(ApiConfig.BASE_URL + "/api/foods");
+                conn = (HttpURLConnection) url.openConnection();
+
+                conn.setReadTimeout(10000);
+                conn.setConnectTimeout(15000);
+                conn.setRequestMethod("GET");
+
+                SharedPrefsManager prefs = new SharedPrefsManager(getContext());
+                String token = prefs.getToken();
+                if (token != null && !token.isEmpty()) {
+                    conn.setRequestProperty("Authorization", "Bearer " + token);
+                }
+
+                int responseCode = conn.getResponseCode();
+                if (responseCode >= 200 && responseCode < 300) {
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        response.append(line);
+                    }
+                    reader.close();
+                    return new JSONArray(response.toString());
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                if (conn != null) conn.disconnect();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(JSONArray foods) {
+            if (foods != null) {
+                Log.d("FOODS_DEBUG", String.valueOf(foods.length()));
+                productList.clear();
+                for (int i = 0; i < foods.length(); i++) {
+                    try {
+                        JSONObject foodJson = foods.getJSONObject(i);
+                        Product p = new Product();
+                        p.setId(foodJson.optString("_id"));
+                        p.setName(foodJson.optString("foodName"));
+                        p.setDescription(foodJson.optString("foodDescription"));
+                        p.setPrice(foodJson.optInt("foodPrice"));
+                        p.setImageUrl(foodJson.optString("foodImage"));
+                        p.setRating((float) foodJson.optDouble("rating", 4.5)); // fallback nếu không có
+                        p.setDiscount(foodJson.optInt("discount", 0));
+                        p.setCategoryId(foodJson.optString("categoryId"));
+
+                        // Parse ingredients nếu có
+                        JSONArray ingredientsArray = foodJson.optJSONArray("ingredients");
+                        if (ingredientsArray != null) {
+                            List<String> ingredients = new ArrayList<>();
+                            for (int j = 0; j < ingredientsArray.length(); j++) {
+                                ingredients.add(ingredientsArray.getString(j));
+                            }
+                            p.setIngredients(ingredients);
+                        }
+
+                        productList.add(p);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                productAdapter.notifyDataSetChanged();
+
+                ViewUtils.adjustRecyclerViewHeight(productsRecyclerView, getContext(), productList.size(), 278, 2);
+
+            } else {
+                Toast.makeText(getContext(), "Không thể tải danh sách món ăn", Toast.LENGTH_SHORT).show();
+            }
+        }
+
+    }
+
 }

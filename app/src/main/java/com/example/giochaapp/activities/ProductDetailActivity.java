@@ -2,7 +2,9 @@
 
 package com.example.giochaapp.activities;
 
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -13,8 +15,21 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.bumptech.glide.Glide;
 import com.example.giochaapp.R;
+import com.example.giochaapp.config.ApiConfig;
 import com.example.giochaapp.models.Product;
 import com.example.giochaapp.utils.DatabaseHelper;
+import com.example.giochaapp.utils.SharedPrefsManager;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ProductDetailActivity extends AppCompatActivity {
 
@@ -61,13 +76,7 @@ public class ProductDetailActivity extends AppCompatActivity {
             return;
         }
 
-        currentProduct = databaseHelper.getProductById(productId);
-        if (currentProduct != null) {
-            displayProductData();
-        } else {
-            Toast.makeText(this, "Không tìm thấy sản phẩm", Toast.LENGTH_SHORT).show();
-            finish();
-        }
+        new FetchProductDetailTask().execute(productId);
     }
 
     private void displayProductData() {
@@ -127,4 +136,107 @@ public class ProductDetailActivity extends AppCompatActivity {
             Toast.makeText(this, "Lỗi khi thêm vào giỏ hàng", Toast.LENGTH_SHORT).show();
         }
     }
+
+    private class FetchProductDetailTask extends AsyncTask<String, Void, String> {
+
+        @Override
+        protected String doInBackground(String... params) {
+            String productId = params[0];
+            HttpURLConnection conn = null;
+
+            try {
+                URL url = new URL(ApiConfig.BASE_URL + "/api/foods/" + productId);
+                conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+
+                SharedPrefsManager prefs = new SharedPrefsManager(ProductDetailActivity.this);
+                String token = prefs.getToken();
+                if (token != null && !token.isEmpty()) {
+                    conn.setRequestProperty("Authorization", "Bearer " + token);
+                }
+
+                int responseCode = conn.getResponseCode();
+                InputStream inputStream = (responseCode >= 200 && responseCode < 300)
+                        ? conn.getInputStream()
+                        : conn.getErrorStream();
+
+                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+                StringBuilder response = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    response.append(line);
+                }
+                reader.close();
+
+                JSONObject result = new JSONObject();
+                result.put("status", responseCode);
+                result.put("body", new JSONObject(response.toString()));
+                return result.toString();
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            } finally {
+                if (conn != null) conn.disconnect();
+            }
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            if (result != null) {
+                try {
+                    JSONObject wrapped = new JSONObject(result);
+                    int statusCode = wrapped.getInt("status");
+                    JSONObject json = wrapped.getJSONObject("body");
+
+                    if (statusCode >= 200 && statusCode < 300) {
+                        Log.d("PRODUCT_DETAIL", "JSON Response: " + json.toString());
+                        JSONObject foodObj = json.getJSONObject("food");
+                        Product product = parseProduct(foodObj);
+                        currentProduct = product;
+                        Log.d("PRODUCT_DETAIL", "Tên sản phẩm: " + product.getName());
+                        displayProductData();
+                    } else {
+                        String message = json.optString("message", "Lỗi khi tải sản phẩm");
+                        Toast.makeText(ProductDetailActivity.this, "Lỗi " + statusCode + ": " + message, Toast.LENGTH_SHORT).show();
+                        finish();
+                    }
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    Toast.makeText(ProductDetailActivity.this, "Lỗi phản hồi từ server!", Toast.LENGTH_SHORT).show();
+                    finish();
+                }
+            } else {
+                Toast.makeText(ProductDetailActivity.this, "Không thể kết nối đến server!", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+        }
+
+        // Tách hàm parseProduct để dễ bảo trì
+        private Product parseProduct(JSONObject json) {
+            Product product = new Product();
+            product.setId(json.optString("_id"));
+            product.setName(json.optString("foodName"));
+            product.setDescription(json.optString("foodDescription"));
+            product.setPrice(json.optInt("foodPrice"));
+            product.setImageUrl(json.optString("foodImage"));
+            product.setRating((float) json.optDouble("rating", 4.5));
+            product.setDiscount(json.optInt("discount", 0));
+            product.setCategoryId(json.optString("categoryId"));
+
+            JSONArray ingredientsArray = json.optJSONArray("ingredients");
+            if (ingredientsArray != null) {
+                List<String> ingredients = new ArrayList<>();
+                for (int i = 0; i < ingredientsArray.length(); i++) {
+                    ingredients.add(ingredientsArray.optString(i));
+                }
+                product.setIngredients(ingredients);
+            }
+
+            return product;
+        }
+    }
+
+
 }
