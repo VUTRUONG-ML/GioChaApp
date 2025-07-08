@@ -22,6 +22,7 @@ import com.example.giochaapp.adapters.ProductAdapter;
 import com.example.giochaapp.config.ApiConfig;
 import com.example.giochaapp.models.Product;
 import com.example.giochaapp.utils.AuthManager;
+import com.example.giochaapp.utils.HttpHelper;
 import com.example.giochaapp.utils.SharedPrefsManager;
 import com.example.giochaapp.utils.ViewUtils;
 
@@ -91,36 +92,18 @@ public class HomeFragment extends Fragment {
     private class GetFoodsTask extends AsyncTask<Void, Void, JSONArray> {
         @Override
         protected JSONArray doInBackground(Void... voids) {
-            HttpURLConnection conn = null;
             try {
-                URL url = new URL(ApiConfig.BASE_URL + "/api/foods");
-                conn = (HttpURLConnection) url.openConnection();
-
-                conn.setReadTimeout(10000);
-                conn.setConnectTimeout(15000);
-                conn.setRequestMethod("GET");
-
                 SharedPrefsManager prefs = new SharedPrefsManager(getContext());
                 String token = prefs.getToken();
-                if (token != null && !token.isEmpty()) {
-                    conn.setRequestProperty("Authorization", "Bearer " + token);
-                }
 
-                int responseCode = conn.getResponseCode();
-                if (responseCode >= 200 && responseCode < 300) {
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                    StringBuilder response = new StringBuilder();
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        response.append(line);
-                    }
-                    reader.close();
-                    return new JSONArray(response.toString());
+                JSONObject response = HttpHelper.getJson(ApiConfig.BASE_URL + "/api/foods", token);
+                int status = response.getInt("status");
+
+                if (status >= 200 && status < 300) {
+                    return response.getJSONArray("body");
                 }
             } catch (Exception e) {
                 e.printStackTrace();
-            } finally {
-                if (conn != null) conn.disconnect();
             }
             return null;
         }

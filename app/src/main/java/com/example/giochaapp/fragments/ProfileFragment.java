@@ -18,6 +18,9 @@ import com.example.giochaapp.models.User;
 import com.example.giochaapp.utils.AuthManager;
 import com.example.giochaapp.utils.SharedPrefsManager;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 public class ProfileFragment extends Fragment {
 
     private ImageView userAvatar;
@@ -66,10 +69,27 @@ public class ProfileFragment extends Fragment {
     }
 
     private void loadUserData() {
-        // Load user data from preferences or database
-        currentUser = createSampleUser();
-        displayUserData();
+        String name = prefsManager.getUserName();
+        String email = prefsManager.getUserEmail();
+        String phone = prefsManager.getUserPhone();
+
+        userName.setText(name);
+        userEmail.setText(email);
+        userPhone.setText(phone);
+        memberInfo.setText("Thành viên từ 2024"); // Hoặc set cứng hoặc lấy từ API nếu có
+
+        userRating.setText("5.0"); // Gắn mặc định hoặc tính toán nếu có
+
+        // Load avatar (tạm thời gắn avatar mẫu)
+        Glide.with(this)
+                .load("https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg")
+                .placeholder(R.drawable.avatar_placeholder)
+                .circleCrop()
+                .into(userAvatar);
+
+        new GetOrderCountTask().execute();
     }
+
 
     private User createSampleUser() {
         // Sample user data - replace with actual data loading
@@ -145,4 +165,31 @@ public class ProfileFragment extends Fragment {
                 .setNegativeButton("Hủy", null)
                 .show();
     }
+
+    private class GetOrderCountTask extends android.os.AsyncTask<Void, Void, Integer> {
+        @Override
+        protected Integer doInBackground(Void... voids) {
+            try {
+                String token = prefsManager.getToken();
+                JSONObject response = com.example.giochaapp.utils.HttpHelper.getJson(
+                        com.example.giochaapp.config.ApiConfig.BASE_URL + "/api/orders/userOrders",
+                        token
+                );
+                if (response != null && response.has("body")) {
+                    JSONArray orders = response.getJSONArray("body");
+                    return orders.length(); // Trả về số lượng đơn hàng
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return 0; // Mặc định 0 nếu lỗi
+        }
+
+        @Override
+        protected void onPostExecute(Integer count) {
+            totalOrders.setText(String.valueOf(count));
+        }
+    }
+
+
 }

@@ -11,10 +11,13 @@
         android:layout_width="match_parent" android:layout_height="match_parent"
         android:gravity="center" android:background="@color/loading_white">
 
+
         <ProgressBar
+            android:layout_marginTop="50sp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             style="@android:style/Widget.DeviceDefault.Light.ProgressBar.Large"/>
+
     </RelativeLayout>
 
 

@@ -18,6 +18,7 @@ import com.example.giochaapp.R;
 import com.example.giochaapp.config.ApiConfig;
 import com.example.giochaapp.models.Product;
 import com.example.giochaapp.utils.DatabaseHelper;
+import com.example.giochaapp.utils.HttpHelper;
 import com.example.giochaapp.utils.SharedPrefsManager;
 
 import org.json.JSONArray;
@@ -26,6 +27,7 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -126,85 +128,58 @@ public class ProductDetailActivity extends AppCompatActivity {
     }
 
     private void addToCart() {
-        boolean success = databaseHelper.addToCart(currentProduct.getId(), quantity);
-
-        if (success) {
-            Toast.makeText(this,
-                    String.format("%dx %s đã được thêm vào giỏ hàng!", quantity, currentProduct.getName()),
-                    Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(this, "Lỗi khi thêm vào giỏ hàng", Toast.LENGTH_SHORT).show();
+        if (currentProduct != null) {
+            new AddToCartTask(currentProduct.getId(), quantity).execute();
         }
     }
 
-    private class FetchProductDetailTask extends AsyncTask<String, Void, String> {
+    private class FetchProductDetailTask extends AsyncTask<String, Void, JSONObject> {
 
         @Override
-        protected String doInBackground(String... params) {
+        protected JSONObject doInBackground(String... params) {
             String productId = params[0];
-            HttpURLConnection conn = null;
+            String url = ApiConfig.BASE_URL + "/api/foods/" + productId;
 
             try {
-                URL url = new URL(ApiConfig.BASE_URL + "/api/foods/" + productId);
-                conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("GET");
-
                 SharedPrefsManager prefs = new SharedPrefsManager(ProductDetailActivity.this);
                 String token = prefs.getToken();
-                if (token != null && !token.isEmpty()) {
-                    conn.setRequestProperty("Authorization", "Bearer " + token);
-                }
-
-                int responseCode = conn.getResponseCode();
-                InputStream inputStream = (responseCode >= 200 && responseCode < 300)
-                        ? conn.getInputStream()
-                        : conn.getErrorStream();
-
-                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-                StringBuilder response = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    response.append(line);
-                }
-                reader.close();
-
-                JSONObject result = new JSONObject();
-                result.put("status", responseCode);
-                result.put("body", new JSONObject(response.toString()));
-                return result.toString();
-
+                return HttpHelper.getJson(url, token); // ⬅ sử dụng lại hàm tiện ích
             } catch (Exception e) {
                 e.printStackTrace();
                 return null;
-            } finally {
-                if (conn != null) conn.disconnect();
             }
         }
 
         @Override
-        protected void onPostExecute(String result) {
+        protected void onPostExecute(JSONObject result) {
             if (result != null) {
                 try {
-                    JSONObject wrapped = new JSONObject(result);
-                    int statusCode = wrapped.getInt("status");
-                    JSONObject json = wrapped.getJSONObject("body");
+                    int statusCode = result.getInt("status");
+                    Object body = result.get("body");
 
-                    if (statusCode >= 200 && statusCode < 300) {
+                    if (statusCode >= 200 && statusCode < 300 && body instanceof JSONObject) {
+                        JSONObject json = (JSONObject) body;
                         Log.d("PRODUCT_DETAIL", "JSON Response: " + json.toString());
-                        JSONObject foodObj = json.getJSONObject("food");
-                        Product product = parseProduct(foodObj);
-                        currentProduct = product;
-                        Log.d("PRODUCT_DETAIL", "Tên sản phẩm: " + product.getName());
-                        displayProductData();
+
+                        JSONObject foodObj = json.optJSONObject("food");
+                        if (foodObj != null) {
+                            Product product = parseProduct(foodObj);
+                            currentProduct = product;
+                            Log.d("PRODUCT_DETAIL", "Tên sản phẩm: " + product.getName());
+                            displayProductData();
+                        } else {
+                            Toast.makeText(ProductDetailActivity.this, "Không tìm thấy dữ liệu sản phẩm", Toast.LENGTH_SHORT).show();
+                            finish();
+                        }
                     } else {
-                        String message = json.optString("message", "Lỗi khi tải sản phẩm");
+                        JSONObject errorBody = (body instanceof JSONObject) ? (JSONObject) body : null;
+                        String message = (errorBody != null) ? errorBody.optString("message", "Lỗi server") : "Lỗi không xác định";
                         Toast.makeText(ProductDetailActivity.this, "Lỗi " + statusCode + ": " + message, Toast.LENGTH_SHORT).show();
                         finish();
                     }
-
                 } catch (Exception e) {
                     e.printStackTrace();
-                    Toast.makeText(ProductDetailActivity.this, "Lỗi phản hồi từ server!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(ProductDetailActivity.this, "Lỗi xử lý phản hồi từ server!", Toast.LENGTH_SHORT).show();
                     finish();
                 }
             } else {
@@ -213,7 +188,6 @@ public class ProductDetailActivity extends AppCompatActivity {
             }
         }
 
-        // Tách hàm parseProduct để dễ bảo trì
         private Product parseProduct(JSONObject json) {
             Product product = new Product();
             product.setId(json.optString("_id"));
@@ -223,7 +197,7 @@ public class ProductDetailActivity extends AppCompatActivity {
             product.setImageUrl(json.optString("foodImage"));
             product.setRating((float) json.optDouble("rating", 4.5));
             product.setDiscount(json.optInt("discount", 0));
-            product.setCategoryId(json.optString("categoryId"));
+            product.setCategoryId(json.optString("foodCategoryId"));
 
             JSONArray ingredientsArray = json.optJSONArray("ingredients");
             if (ingredientsArray != null) {
@@ -235,6 +209,63 @@ public class ProductDetailActivity extends AppCompatActivity {
             }
 
             return product;
+        }
+    }
+
+
+    // thêm vào giỏ hàng
+    private class AddToCartTask extends AsyncTask<Void, Void, JSONObject> {
+        private final String foodId;
+        private final int quantity;
+
+        public AddToCartTask(String foodId, int quantity) {
+            this.foodId = foodId;
+            this.quantity = quantity;
+        }
+        @Override
+        protected JSONObject doInBackground(Void... voids) {
+
+            try {
+                // Token
+                SharedPrefsManager prefs = new SharedPrefsManager(ProductDetailActivity.this);
+                String token = prefs.getToken();
+
+                JSONObject body = new JSONObject();
+                body.put("foodId", foodId);
+                body.put("quantity", quantity);
+
+                return HttpHelper.postJson(ApiConfig.BASE_URL + "/api/cart/addToCart", body, token);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
+
+        @Override
+        protected void onPostExecute(JSONObject result) {
+            if (result != null) {
+                try {
+                    int statusCode = result.getInt("status");
+                    JSONObject responseBody = result.getJSONObject("body");
+                    String message = responseBody.optString("message", "Không rõ phản hồi");
+
+                    if (statusCode >= 200 && statusCode < 300) {
+                        Toast.makeText(ProductDetailActivity.this,
+                                String.format("%dx %s đã được thêm vào giỏ hàng!", quantity, currentProduct.getName()),
+                                Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(ProductDetailActivity.this,
+                                "Lỗi " + statusCode + ": " + message,
+                                Toast.LENGTH_LONG).show();
+                    }
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    Toast.makeText(ProductDetailActivity.this, "Lỗi khi xử lý phản hồi từ server!", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Toast.makeText(ProductDetailActivity.this, "Không thể kết nối đến server!", Toast.LENGTH_SHORT).show();
+            }
         }
     }
 

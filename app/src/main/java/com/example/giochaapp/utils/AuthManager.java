@@ -68,6 +68,11 @@ public class AuthManager {
 
                     JSONObject userJson = new JSONObject(result.toString());
                     prefs.setUserObject(userJson);
+                    String phone = userJson.optString("phoneNumber", "");
+                    prefs.setUserPhone(phone);
+
+                    String name = userJson.optString("userName", "");
+                    prefs.setUserName(name);
                     callback.onSuccess(userJson);
                 } else {
                     callback.onError("Lỗi xác thực: " + responseCode);

@@ -1,6 +1,7 @@
 package com.example.giochaapp.activities;
 
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.widget.Button;
@@ -14,6 +15,7 @@ import com.example.giochaapp.MainActivity;
 import com.example.giochaapp.R;
 import com.example.giochaapp.config.ApiConfig;
 import com.example.giochaapp.utils.AuthManager;
+import com.example.giochaapp.utils.HttpHelper;
 import com.example.giochaapp.utils.SharedPrefsManager;
 
 import org.json.JSONException;
@@ -122,7 +124,7 @@ public class LoginActivity extends AppCompatActivity {
         finish();
     }
 
-    private class LoginTask extends android.os.AsyncTask<Void, Void, String> {
+    private class LoginTask extends AsyncTask<Void, Void, JSONObject> {
         private String email, password;
 
         public LoginTask(String email, String password) {
@@ -131,103 +133,56 @@ public class LoginActivity extends AppCompatActivity {
         }
 
         @Override
-        protected String doInBackground(Void... voids) {
-            HttpURLConnection conn = null;
+        protected JSONObject doInBackground(Void... voids) {
             try {
-                URL url = new URL(ApiConfig.BASE_URL + "/api/auth/login");
-                conn = (HttpURLConnection) url.openConnection();
+                JSONObject loginBody = new JSONObject();
+                loginBody.put("email", email);
+                loginBody.put("passWord", password);
 
-                conn.setReadTimeout(10000);
-                conn.setConnectTimeout(15000);
-                conn.setRequestMethod("POST");
-                conn.setDoOutput(true);
-                conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-
-                // Gửi JSON
-                JSONObject jsonParam = new JSONObject();
-                jsonParam.put("email", email);
-                jsonParam.put("passWord", password);
-
-                OutputStream os = conn.getOutputStream();
-                os.write(jsonParam.toString().getBytes("UTF-8"));
-                os.flush();
-                os.close();
-
-                int responseCode = conn.getResponseCode();
-                InputStream inputStream;
-
-                if (responseCode >= 200 && responseCode < 300) {
-                    inputStream = conn.getInputStream(); // Thành công
-                } else {
-                    inputStream = conn.getErrorStream(); // Lỗi (400, 404, 500...)
-                }
-
-                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-                StringBuilder response = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    response.append(line);
-                }
-                reader.close();
-                JSONObject wrappedResult = new JSONObject();
-                wrappedResult.put("status", responseCode);
-                wrappedResult.put("body", new JSONObject(response.toString()));
-                return wrappedResult.toString();
-
+                return HttpHelper.postJson(ApiConfig.BASE_URL + "/api/auth/login", loginBody, null);
             } catch (Exception e) {
                 e.printStackTrace();
                 return null;
-            } finally {
-                if (conn != null) conn.disconnect();
             }
         }
 
-
         @Override
-        protected void onPostExecute(String result) {
+        protected void onPostExecute(JSONObject result) {
             loginButton.setEnabled(true);
             loginButton.setText("Đăng nhập");
 
             if (result != null) {
-                try {
-                    JSONObject json = new JSONObject(result);
-                    int statusCode = json.getInt("status");
-                    JSONObject body = json.getJSONObject("body");
-                    String message = body.optString("message", "Đăng nhập thành công!");
+                int statusCode = result.optInt("status", 0);
+                JSONObject body = result.optJSONObject("body");
+                String message = body != null ? body.optString("message", "Đăng nhập thành công!") : "Lỗi không xác định";
 
-                    Toast.makeText(LoginActivity.this, message, Toast.LENGTH_LONG).show();
+                Toast.makeText(LoginActivity.this, message, Toast.LENGTH_LONG).show();
 
-                    if (statusCode >= 200 && statusCode < 300) {
-                        String token = body.optString("token", "");
-                        if (!token.isEmpty()) {
-                            AuthManager.getInstance(LoginActivity.this).login(email, token);
+                if (statusCode >= 200 && statusCode < 300 && body != null) {
+                    String token = body.optString("token", "");
+                    if (!token.isEmpty()) {
+                        AuthManager.getInstance(LoginActivity.this).login(email, token);
 
-                            // Gọi API /me để lấy thông tin người dùng và lưu lại
-                            AuthManager.getInstance(LoginActivity.this).fetchCurrentUser(new AuthManager.Callback() {
-                                @Override
-                                public void onSuccess(JSONObject userData) {
-                                    // Điều hướng sang màn chính
-                                    runOnUiThread(() -> navigateToMain());
-                                }
+                        AuthManager.getInstance(LoginActivity.this).fetchCurrentUser(new AuthManager.Callback() {
+                            @Override
+                            public void onSuccess(JSONObject userData) {
+                                runOnUiThread(() -> navigateToMain());
+                            }
 
-                                @Override
-                                public void onError(String errorMessage) {
-                                    runOnUiThread(() -> {
-                                        Toast.makeText(LoginActivity.this, "Lỗi khi lấy thông tin user: " + errorMessage, Toast.LENGTH_SHORT).show();
-                                    });
-                                }
-                            });
-                        } else {
-                            Toast.makeText(LoginActivity.this, "Không nhận được token!", Toast.LENGTH_SHORT).show();
-                        }
+                            @Override
+                            public void onError(String errorMessage) {
+                                runOnUiThread(() -> Toast.makeText(LoginActivity.this, "Lỗi khi lấy thông tin user: " + errorMessage, Toast.LENGTH_SHORT).show());
+                            }
+                        });
+                    } else {
+                        Toast.makeText(LoginActivity.this, "Không nhận được token!", Toast.LENGTH_SHORT).show();
                     }
-                } catch (JSONException e) {
-                    Toast.makeText(LoginActivity.this, "Lỗi phản hồi từ server!", Toast.LENGTH_SHORT).show();
                 }
             } else {
-                Toast.makeText(LoginActivity.this, "Đăng nhập thất bại! Kiểm tra thông tin hoặc API.", Toast.LENGTH_LONG).show();
+                Toast.makeText(LoginActivity.this, "Đăng nhập thất bại! Kiểm tra kết nối hoặc server.", Toast.LENGTH_LONG).show();
             }
         }
     }
+
 
 }
